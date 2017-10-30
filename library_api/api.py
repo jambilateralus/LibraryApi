@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth import authenticate
 from rest_framework import viewsets, status
 from rest_framework.authtoken.models import Token
@@ -29,6 +31,39 @@ def member_info(request):
     member = models.Member.objects.filter(user=user)
     serializer = serializers.MemberInfoSerializer(member, many=True)
     return Response(serializer.data)
+
+
+@api_view(["GET"])
+def reserve_book(request, book_pk):
+    user = request.user
+    date = datetime.datetime.today().strftime('%Y-%m-%d')
+    book = models.Book.objects.get(pk=book_pk)
+    member = models.Member.objects.get(user=user)
+
+    if member and book:
+        reserved_books = models.ReservedBook.objects.filter(reserved_by=member)
+        already_reserved = models.ReservedBook.objects.filter(reserved_by=member, book=book)
+
+        if already_reserved:
+            return Response({"message": "You have already reserved this book."}, status=status.HTTP_200_OK)
+
+        if reserved_books.count() < 3:
+            res_book = models.ReservedBook.objects.create(book=book,
+                                                          reserved_date=date)
+
+            res_book.reserved_by.add(member)
+            return Response({"message": "Book reserved"},
+                            status=status.HTTP_200_OK)
+
+        return Response({"message": "You have already reserved 3 books."},
+                        status=status.HTTP_200_OK)
+
+    return Response({"message": "Invalid"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(["POST"])
+def request_book(request):
+    return 0
 
 
 """-----------------------------------------------------------------------------"""
@@ -77,9 +112,9 @@ class BookViewSet(viewsets.ModelViewSet):
     queryset = models.Book.objects.all()
     serializer_class = serializers.BookSerializer
     permission_classes = [CreatePutDeleteAdminOnly]
-    pagination_class = StandardResultsSetPagination
+    # pagination_class = StandardResultsSetPagination
     filter_backends = (SearchFilter,)
-    search_fields = ('^title', '^authors', '^publisher')
+    search_fields = ('^title',)
 
 
 """-----------------------------------------------------------------------------"""
@@ -105,7 +140,7 @@ class RequestedBookViewSet(viewsets.ModelViewSet):
 
 class ReservedBookViewSet(viewsets.ModelViewSet):
     """ ViewSet for ReservedBook class """
-    serializer_class = serializers.RequestedBookSerializer
+    serializer_class = serializers.ReservedBookSerializer
     # todo add permission class for ReservedBookViewSet
     # todo customize post for ReservedBookViewSet
     permission_classes = [AllowMemberOnly]
@@ -123,8 +158,8 @@ class BurrowedBooksViewset(viewsets.ModelViewSet):
     """ ViewSet for BurrowedBook class"""
     serializer_class = serializers.BurrowedBookSerializer
     pagination_class = StandardResultsSetPagination
+    permission_classes = [AllowMemberOnly]
 
-    # todo add permission class
     # todo customize post
 
     def get_queryset(self):

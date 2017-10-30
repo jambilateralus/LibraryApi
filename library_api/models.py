@@ -84,6 +84,9 @@ class Book(models.Model):
     def get_update_url(self):
         return reverse('bookmanager_book_update', args=(self.pk,))
 
+    def get_instance(self):
+        return self
+
 
 class BookCopy(models.Model):
     # Fields
@@ -188,17 +191,14 @@ class RequestedBook(models.Model):
 
 class ReservedBook(models.Model):
     # Fields
-    reserved_date = models.DateTimeField()
+    reserved_date = models.DateField(null=True)
 
     # Relationship Fields
-    book = models.ForeignKey(Book)
-    reserved_by = models.ManyToManyField(Member)
+    book = models.ForeignKey(Book, null=True)
+    reserved_by = models.ManyToManyField(Member, null=True)
 
     class Meta:
         ordering = ('-pk',)
-
-    def __str__(self):
-        return self.book + " is  reserved by " + self.reserved_by
 
     def get_absolute_url(self):
         return reverse('librarymanager_reservedbook_detail', args=(self.pk,))
