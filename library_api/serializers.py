@@ -56,6 +56,8 @@ class BookSerializer(serializers.ModelSerializer):
 
 
 class BookCopySerializer(serializers.ModelSerializer):
+    book = BookSerializer()
+
     class Meta:
         model = models.BookCopy
         fields = (
@@ -111,6 +113,19 @@ class BurrowedBookSerializer(serializers.ModelSerializer):
         )
 
 
+class BurrowedBooksForAppSerializer(serializers.ModelSerializer):
+    book_copy = BookCopySerializer()
+
+    class Meta:
+        model = models.BurrowedBook
+        fields = (
+            'pk',
+            'book_copy',
+            'borrow_date',
+            'return_date',
+        )
+
+
 class RequestedBookSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.RequestedBook
@@ -119,15 +134,19 @@ class RequestedBookSerializer(serializers.ModelSerializer):
             'title',
             'author',
             'publisher',
+            'requested_by',
             'requested_date',
         )
 
 
 class ReservedBookSerializer(serializers.ModelSerializer):
+    book = BookSerializer()
+
     class Meta:
         model = models.ReservedBook
         fields = (
             'pk',
+            'book',
             'reserved_date',
             'book',
         )

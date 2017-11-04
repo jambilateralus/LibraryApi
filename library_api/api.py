@@ -62,8 +62,25 @@ def reserve_book(request, book_pk):
 
 
 @api_view(["POST"])
-def request_book(request):
-    return 0
+def request_new_book(request):
+    user = request.user
+    member = models.Member.objects.get(user=user)
+    current_date = datetime.datetime.today().strftime('%Y-%m-%d')
+
+    data = {
+        'title': request.data['title'],
+        'author': request.data['author'],
+        'publisher': request.data['publisher'],
+        'requested_by': member.pk,
+        'requested_date': current_date
+    }
+
+    serializer = serializers.RequestedBookSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 """-----------------------------------------------------------------------------"""
@@ -125,7 +142,6 @@ class BookViewSet(viewsets.ModelViewSet):
 class RequestedBookViewSet(viewsets.ModelViewSet):
     """ ViewSet for RequestedBook class"""
     serializer_class = serializers.RequestedBookSerializer
-    pagination_class = StandardResultsSetPagination
 
     # todo add permission class for RequestedBookViewSet
     # todo customize post method for RequestedBookViewSet
@@ -135,7 +151,7 @@ class RequestedBookViewSet(viewsets.ModelViewSet):
         for the currently authenticated user."""
         user = self.request.user
         member = models.Member.objects.filter(user=user)
-        return models.RequestedBook.objects.filter(burrowed_by=member)
+        return models.RequestedBook.objects.filter(requested_by=member)
 
 
 class ReservedBookViewSet(viewsets.ModelViewSet):
@@ -144,7 +160,6 @@ class ReservedBookViewSet(viewsets.ModelViewSet):
     # todo add permission class for ReservedBookViewSet
     # todo customize post for ReservedBookViewSet
     permission_classes = [AllowMemberOnly]
-    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         """This view should return a list of all the Reserved Books
@@ -157,19 +172,20 @@ class ReservedBookViewSet(viewsets.ModelViewSet):
 class BurrowedBooksViewset(viewsets.ModelViewSet):
     """ ViewSet for BurrowedBook class"""
     serializer_class = serializers.BurrowedBookSerializer
-    pagination_class = StandardResultsSetPagination
-    permission_classes = [AllowMemberOnly]
 
     # todo customize post
 
     def get_queryset(self):
         """This view should return a list of all the Burrowed Books
         for the currently authenticated user."""
-        if self.request.user == 'superuser':
+        if self.request.user.is_superuser:
             # Return a list of all burrowed books if the request is from admin.
+            self.pagination_class = StandardResultsSetPagination
             return models.BurrowedBook.objects.all()
 
         # Else Return a list of all the burrowed Book for currently authenticated member.
+        self.serializer_class = serializers.BurrowedBooksForAppSerializer
         user = self.request.user
-        member = models.Member.object.filter(user=user)
+        member = models.Member.objects.filter(user=user)
         return models.BurrowedBook.objects.filter(burrowed_by=member)
+
