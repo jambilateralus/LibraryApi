@@ -24,7 +24,7 @@ SECRET_KEY = 'q+#%+8$wv7+!%^2=!f1v6l)gr!9nhh^&6vkk&&wv_@hdh)$(x&'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['08cedf22.ngrok.io', 'localhost', 'b8ff3de4.ngrok.io', '127.0.0.1']
+ALLOWED_HOSTS = ['c1ce842b.ngrok.io', 'localhost', 'b8ff3de4.ngrok.io', '127.0.0.1']
 
 # Application definition
 
@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'rest_framework.authtoken',
+    'django_extensions',
 
     'library_api'
 ]
@@ -117,3 +118,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/home'
+LOGOUT_REDIRECT_URL = '/login/'
+

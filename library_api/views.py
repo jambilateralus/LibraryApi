@@ -1,48 +1,64 @@
 # Create your views here.
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
-"""
-@api_view(['GET', 'POST'])
-def category_list(request):
-    # List all category or add new category.
-    if request.method == 'GET':
-        if request.user.is_authenticated:
-            categories = models.Category.objects.all()
-            serializer = serializers.CategorySerializer(categories, many=True)
-            return Response(serializer.data)
-        return Response({"message": "not authorized"}, status=status.HTTP_401_UNAUTHORIZED)
+from library_api.models import Member, BurrowedBook, ReservedBook
+from . import forms
 
-    elif request.method == 'POST':
-        if request.user.is_superuser:
-            serializer = serializers.CategorySerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+def get_current_member(req):
+    current_user = req.user
+    member = Member.objects.filter(user=current_user)
+    return member
+
+
+@login_required
+def index(request):
+    template = 'home/index.html'
+    librarian = request.user.username
+    form = forms.MemberIdForm(request.POST)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            member_id = form.cleaned_data['memberId']
+            member = Member.objects.filter(member_id=member_id)
+            if member:
+                member_name = member[0].first_name + " " + member[0].last_name
+                member_year = str(member[0].registered_year)[:4]
+                burrowed_books = BurrowedBook.objects.filter(burrowed_by=member)
+                reserved_books = ReservedBook.objects.filter(reserved_by=member)
+
+                # if member exits then show member info page
+                return render(request, 'home/member_info.html', {"member_name": member_name,
+                                                                "member_year": member_year,
+                                                                "burrowed_book_array": burrowed_books,
+                                                                "reserved_book_array": reserved_books})
             else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"message": "not authorized"}, status=status.HTTP_401_UNAUTHORIZED)
+                # else render index page
+                return render(request, template, {"librarian": librarian, 'form': form})
+
+        else:
+            # form not valid
+            return render(request, template, {"librarian": librarian, 'form': form})
+
+    else:
+        # request method is get
+        return render(request, template, {"librarian": librarian, 'form': form})
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
-def category_detail(request, pk):
-    # Retrieve, update or delete a Category instance.
-    try:
-        category = models.Category.objects.get(pk=pk)
-    except models.Category.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+def member_details(request, ):
+    template = 'home/memberinfo.html'
+    return render(request, template)  #
 
-    if request.method == 'GET':
-        serializer = serializers.CategorySerializer(category)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        serializer = serializers.CategorySerializer(category, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        category.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-"""
+# def index(request):
+#     template = 'home/index.html'
+#     member = get_current_member(request)
+#     member_name = member[0].first_name + " " + member[0].last_name
+#     registered_year = str(member[0].registered_year)
+#     burrowed_books = BurrowedBook.objects.filter(burrowed_by=member)
+#     requested_book = RequestedBook.objects.filter(requested_by=member)
+#
+#     return render(request, template, {"burrowed_book_array": burrowed_books,
+#                                       "requested_book": requested_book,
+#                                       "member_name": member_name,
+#                                       "registered_year": registered_year})

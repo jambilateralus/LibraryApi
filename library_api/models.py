@@ -197,6 +197,9 @@ class ReservedBook(models.Model):
     book = models.ForeignKey(Book, null=True)
     reserved_by = models.ManyToManyField(Member, null=True)
 
+    def __str__(self):
+        return str(self.book)
+
     class Meta:
         ordering = ('-pk',)
 
